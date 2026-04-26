@@ -1,6 +1,6 @@
 # Makefile for FTL Quantum Project
 
-.PHONY: setup ex00 ex01 ex02 clean
+.PHONY: setup ex00 ex01 ex02 ex03 clean
 
 VENV = .venv
 PYTHON = $(VENV)/bin/python
@@ -24,6 +24,10 @@ ex01:
 ex02:
 	mkdir -p results
 	$(PYTHON) ex02/quantum_noise.py
+
+ex03:
+	mkdir -p results
+	$(PYTHON) ex03/deutsch_jozsa.py
 
 clean:
 	rm -rf results/*
