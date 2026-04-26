@@ -10,6 +10,7 @@ setup:
 	python3 -m venv $(VENV)
 	$(PIP) install --upgrade pip
 	$(PIP) install qiskit qiskit-aer matplotlib pylatexenc
+	$(PIP) install qiskit qiskit-aer qiskit-ibm-runtime matplotlib pylatexenc
 	mkdir -p results
 
 ex00:
