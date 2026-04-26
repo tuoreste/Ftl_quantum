@@ -30,6 +30,7 @@ H-gate takes a definate state and puts it into equal superposition where
 Quantum circuits: sequence of gates applied to qubits to some measurements
 
 simulator: runs on CPU, perfectly simulating quantum behavior using matrix math. no noise, no errors
+
 """
 
 import qiskit
