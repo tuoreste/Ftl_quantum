@@ -1,6 +1,6 @@
 """
 
-sources of quantum noises
+sources of quantum noises, engineering imperfection
 
 1. Gate errors:
     Every quantum gate on real hardware is implemented by firing a precisely timed microwave pulse at a superconducting qubit.
