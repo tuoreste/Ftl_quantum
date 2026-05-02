@@ -1,7 +1,96 @@
+"""
 
+The Big Picture
+Goal: find a marked item among N = 2^n items
+Classical: check items one by one → O(N) steps
+Quantum:   amplify the right answer → O(√N) steps
 
+Three parts: Initialization → Oracle → Diffuser
+Repeat Oracle + Diffuser √N times then measure
 
+Part 1: Initialization
+Start: all qubits in |0⟩
+Apply H to every qubit
+Result: equal superposition of all N states
+Every state has the same amplitude: 1/√N
+Nobody is special yet — the target looks identical to everyone else
 
+Part 2: The Oracle
+The oracle knows which state is the target
+It does not move it or reveal it
+It simply flips the target's amplitude from positive to negative
+  → target gets phase -1
+  → everyone else stays +1
+The target is now "marked" but still invisible to measurement
+  (squaring a negative still gives positive probability)
+
+Part 3: The Diffuser
+The diffuser reflects all amplitudes around their average
+Before reflection:
+  → target amplitude is negative (below average)
+  → everyone else is positive (above average)
+After reflection:
+  → target gets pushed far above average (large positive amplitude)
+  → everyone else gets pushed slightly below average
+One oracle + one diffuser = one Grover iteration
+The target's amplitude grows a little each iteration
+
+How Many Iterations
+Too few iterations → target amplitude not yet large enough
+Too many iterations → overshoots, amplitude drops again
+Optimal number → floor(π/4 × √N)
+
+n=2 qubits → N=4  → 1 iteration
+n=3 qubits → N=8  → 2 iterations
+n=4 qubits → N=16 → 3 iterations
+
+The Diffuser Circuit Step by Step
+Step 1: H on all qubits     → change basis
+Step 2: X on all qubits     → flip so |00...0⟩ becomes the target
+Step 3: multi-controlled Z  → flip phase of |00...0⟩ only
+Step 4: X on all qubits     → unflip (undo step 2)
+Step 5: H on all qubits     → change basis back
+
+Net effect: reflect all amplitudes around their mean
+
+The Oracle Circuit Step by Step
+Step 1: X on qubits where target bit = 0
+        → maps target pattern to |11...1⟩
+Step 2: multi-controlled Z
+        → flips phase only when all qubits are 1
+        → only the target state satisfies this
+Step 3: X on same qubits again
+        → uncompute step 1, restore original state
+
+Net effect: target gets phase -1, everyone else unchanged
+
+Measurement
+After √N iterations:
+  target amplitude ≈ 1.0
+  all other amplitudes ≈ 0.0
+
+Measure all qubits
+→ target state appears with high probability (~95% for n=3)
+→ run 1000 shots to confirm the dominant result
+→ the most frequent result is your answer
+
+Why Faster Than Classical
+Classical search:
+  check item 1 → not it
+  check item 2 → not it
+  check item 3 → found it  ← could be anywhere, average N/2 checks
+
+Quantum search:
+  all items exist simultaneously in superposition
+  oracle marks the target via phase in one query
+  diffuser amplifies the target's amplitude
+  repeat √N times → measure → done
+
+For N=1,000,000:
+  Classical → 500,000 checks on average
+  Quantum   → ~785 iterations
+
+"""
 
 import math
 import os
@@ -25,30 +114,25 @@ Method:
 This way ONLY the target state gets its phase flipped.
 All other states are completely unaffected.
 """
-def make_oracle(n_qubits, target_state):
-    qc = QuantumCircuit(n_qubits)
+def make_oracle(n, target):
+    qc = QuantumCircuit(n)
 
-    # Step 1: map target → |11...1⟩
-    # reversed() because Qiskit qubit 0 = rightmost bit of the string
-    for i, bit in enumerate(reversed(target_state)):
-        if bit == '0':
+    for i, bit in enumerate(reversed(target)):
+        if bit == "0":
             qc.x(i)
 
-    # Step 2: multi-controlled Z via H + mcx + H
-    # H transforms |1⟩ → (|0⟩-|1⟩)/√2 so that mcx acts as a phase flip
-    qc.h(n_qubits - 1)
-    qc.mcx(list(range(n_qubits - 1)), n_qubits - 1)
-    qc.h(n_qubits - 1)
+    qc.h(n - 1)
+    qc.mcx(range(n - 1), n - 1)
+    qc.h(n - 1)
 
-    # Step 3: uncompute — restore qubits we flipped in step 1
-    for i, bit in enumerate(reversed(target_state)):
-        if bit == '0':
+    for i, bit in enumerate(reversed(target)):
+        if bit == "0":
             qc.x(i)
 
-    gate = qc.to_gate()
-    gate.name = f"Oracle\n({target_state})"
-    return gate
+    oracle = qc.to_gate()
+    oracle.name = f"Oracle\n({target})"
 
+    return oracle
 
 
 """
@@ -63,146 +147,96 @@ Effect:
 Implementation (standard):
     H on all → X on all → multi-controlled Z → X on all → H on all
 """
-def make_diffuser(n_qubits):
-    qc = QuantumCircuit(n_qubits)
+def make_diffuser(n):
+    qc = QuantumCircuit(n)
 
-    # Transform to computational basis where |00...0⟩ is the "mirror"
-    for q in range(n_qubits):
-        qc.h(q)
-    for q in range(n_qubits):
-        qc.x(q)
+    qc.h(range(n))
+    qc.x(range(n))
 
-    # Phase flip on |00...0⟩ only
-    qc.h(n_qubits - 1)
-    qc.mcx(list(range(n_qubits - 1)), n_qubits - 1)
-    qc.h(n_qubits - 1)
+    qc.h(n - 1)
+    qc.mcx(range(n - 1), n - 1)
+    qc.h(n - 1)
 
-    # Undo the basis transformation
-    for q in range(n_qubits):
-        qc.x(q)
-    for q in range(n_qubits):
-        qc.h(q)
+    qc.x(range(n))
+    qc.h(range(n))
 
-    gate = qc.to_gate()
-    gate.name = "Diffuser"
-    return gate
+    diffuser = qc.to_gate()
+    diffuser.name = "Diffuser"
 
+    return diffuser
 
-# ─── Grover's Algorithm ───────────────────────────────────────────────────────
+"""
+Builds the full Grover search circuit.
 
-def grover(n_qubits, target_state):
-    """
-    Builds the full Grover search circuit.
+Parameters:
+    n_qubits     : int, number of qubits (>= 2)
+    target_state : str, binary string of length n_qubits
+                    e.g. '111' to search for state 7 in 3-qubit space
 
-    Parameters:
-      n_qubits     : int, number of qubits (>= 2)
-      target_state : str, binary string of length n_qubits
-                     e.g. '111' to search for state 7 in 3-qubit space
+Returns:
+    The complete QuantumCircuit ready to run.
+"""
+def grover(n, target):
+    iterations = max(1, math.floor(math.pi / 4 * math.sqrt(2**n)))
 
-    Returns:
-      The complete QuantumCircuit ready to run.
-    """
-    assert n_qubits >= 2, \
-        "Need at least 2 qubits"
-    assert len(target_state) == n_qubits, \
-        f"target_state '{target_state}' must have exactly {n_qubits} bits"
-    assert all(b in '01' for b in target_state), \
-        "target_state must contain only '0' and '1'"
+    cr = ClassicalRegister(n, "result")
+    qc = QuantumCircuit(n, cr)
 
-    N            = 2 ** n_qubits
-    n_iterations = max(1, math.floor(math.pi / 4 * math.sqrt(N)))
-
-    print(f"\nGrover search:")
-    print(f"  Qubits     : {n_qubits}")
-    print(f"  N states   : {N}")
-    print(f"  Target     : |{target_state}⟩  (decimal {int(target_state, 2)})")
-    print(f"  Iterations : {n_iterations}  (optimal ≈ π/4 × √{N} = {math.pi/4*math.sqrt(N):.2f})")
-
-    cr = ClassicalRegister(n_qubits, name='result')
-    qc = QuantumCircuit(n_qubits)
-    qc.add_register(cr)
-
-    # ── 1. Initialization: equal superposition ────────────────────────────────
-    for q in range(n_qubits):
-        qc.h(q)
+    qc.h(range(n))
     qc.barrier()
 
-    # ── 2+3. Grover iterations: oracle then diffuser ──────────────────────────
-    oracle   = make_oracle(n_qubits, target_state)
-    diffuser = make_diffuser(n_qubits)
+    oracle = make_oracle(n, target)
+    diffuser = make_diffuser(n)
 
-    for iteration in range(n_iterations):
-        # Oracle marks the target (phase flip)
-        qc.append(oracle, list(range(n_qubits)))
+    for _ in range(iterations):
+        qc.append(oracle, range(n))
+        qc.append(diffuser, range(n))
         qc.barrier()
 
-        # Diffuser amplifies the marked state
-        qc.append(diffuser, list(range(n_qubits)))
-        qc.barrier()
+    qc.measure(range(n), range(n))
 
-    # ── 4. Measure all qubits ────────────────────────────────────────────────
-    for q in range(n_qubits):
-        qc.measure(q, cr[q])
+    return qc, iterations
 
-    return qc, n_iterations
+def run_grover(n, target, shots=1000):
+    qc, iterations = grover(n, target)
 
+    print(f"\nGrover Search")
+    print(f"Target      : |{target}⟩")
+    print(f"Qubits      : {n}")
+    print(f"Iterations  : {iterations}")
 
-# ─── Run helper ───────────────────────────────────────────────────────────────
+    simulator = AerSimulator()
+    counts = simulator.run(
+        transpile(qc, simulator),
+        shots=shots
+    ).result().get_counts()
 
-def run_grover(n_qubits, target_state, shots=1000):
-    """
-    Builds, runs, and interprets a Grover search.
-    """
-    circuit, n_iter = grover(n_qubits, target_state)
+    top = max(counts, key=counts.get)
+    probability = counts[top] / shots * 100
 
-    # Display circuit
-    print("\nCircuit:")
-    print(circuit)
-    circuit.draw('mpl')
-    plt.title(f"Grover Search — target={target_state}, {n_iter} iteration(s)")
-    plt.savefig(f"results/ex04_circuit_{target_state}.png")
+    print(f"Top result  : |{top}⟩ ({probability:.1f}%)")
+    print(f"Verdict     : {'FOUND ✓' if top == target else 'FAILED'}")
+
+    qc.draw("mpl")
+    plt.title(f"Grover Circuit |{target}⟩")
+    plt.savefig(f"results/grover_circuit_{target}.png")
     plt.show()
 
-    # Run on simulator
-    simulator = AerSimulator()
-    compiled  = transpile(circuit, simulator)
-    counts    = simulator.run(compiled, shots=shots).result().get_counts()
-
-    print(f"\nResults ({shots} shots):")
-    print(f"  Raw counts : {counts}")
-
-    # Find most likely result
-    top_result = max(counts, key=counts.get)
-    top_prob   = counts[top_result] / shots * 100
-    print(f"  Top result : |{top_result}⟩  ({top_prob:.1f}% of shots)")
-    print(f"  Target was : |{target_state}⟩")
-
-    if top_result == target_state:
-        print(f"  Verdict    : FOUND ✓")
-    else:
-        print(f"  Verdict    : check iteration count or oracle")
-
-    # Histogram
     plot_histogram(counts)
-    plt.title(f"Grover — target |{target_state}⟩, {n_iter} iteration(s)")
-    plt.savefig(f"results/ex04_histogram_{target_state}.png")
+    plt.title(f"Grover Results |{target}⟩")
+    plt.savefig(f"results/grover_histogram_{target}.png")
     plt.show()
 
     return counts
 
-
-# ─── Main: test with multiple cases ──────────────────────────────────────────
-
 if __name__ == "__main__":
 
-    # ── Test 1: 3 qubits, target = '111' (matches the subject's example) ─────
-    run_grover(n_qubits=3, target_state='111')
+    tests = [
+        (3, "111"),
+        (3, "101"),
+        (2, "10"),
+        (4, "1010"),
+    ]
 
-    # ── Test 2: 3 qubits, different target ───────────────────────────────────
-    run_grover(n_qubits=3, target_state='101')
-
-    # ── Test 3: 2 qubits (minimum) ───────────────────────────────────────────
-    run_grover(n_qubits=2, target_state='10')
-
-    # ── Test 4: 4 qubits ─────────────────────────────────────────────────────
-    run_grover(n_qubits=4, target_state='1010')
+    for n, target in tests:
+        run_grover(n, target)
