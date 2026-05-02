@@ -87,22 +87,9 @@ After the final H gates, the input qubits cannot all be |0⟩ → non-zero resul
 |111⟩ → three 1s → odd  → phase -1
 """
 def oracle_balanced(circuit, input_qubits, ancilla_qubit):
-    # circuit.cx(input_qubits[2], ancilla_qubit[0])
-    # ====
     circuit.cx(input_qubits[0], ancilla_qubit[0])
     circuit.cx(input_qubits[1], ancilla_qubit[0])
     circuit.cx(input_qubits[2], ancilla_qubit[0])
-    # ====
-    # circuit.x([0, 2])
-    # circuit.mcx(input_qubits, ancilla_qubit)
-    # circuit.x([0, 2])
-    # circuit.x(0)
-    # circuit.mcx(input_qubits, ancilla_qubit)
-    # circuit.x([0, 1])
-    # circuit.mcx(input_qubits, ancilla_qubit)
-    # circuit.x([1, 2])
-    # circuit.mcx(input_qubits, ancilla_qubit)
-    # circuit.x(2)
 
 """
 Builds and returns the full Deutsch-Jozsa circuit for a given oracle.
@@ -134,48 +121,48 @@ def deutsch_jozsa(oracle_fn, oracle_name="unknown"):
 
 def run_and_interpret(circuit, label):
     simulator = AerSimulator()
-    compiled  = transpile(circuit, simulator)
-    counts    = simulator.run(compiled, shots=500).result().get_counts()
+    counts    = simulator.run(transpile(circuit, simulator), shots=500).result().get_counts()
+
+    measured = max(counts, key=counts.get)
+    answer = 0 if measured == "000" else 1
+    verdict = "CONSTANT" if answer == 0 else "BALANCED"
 
     print(f"\n{'='*40}")
     print(f"Oracle: {label}")
     print(f"Raw counts: {counts}")
-
-    measured = max(counts, key=counts.get)
-
-    if measured == "000":
-        answer = 0
-        print("Verdict: CONSTANT")
-    else:
-        answer = 1
-        print("Verdict: BALANCED")
-
+    print(f"Verdict: {verdict}")
     print(f"Assignment output bit: {answer}")
+
     return counts
 
-circuit_constant = deutsch_jozsa(oracle_constant, "Constant")
-circuit_balanced = deutsch_jozsa(oracle_balanced, "Balanced")
+def save_circuit_diagram(circuit, label):
+    print(f"\n=== {label.upper()} ORACLE CIRCUIT ===")
+    print(circuit)
 
-print("=== CONSTANT ORACLE CIRCUIT ===")
-print(circuit_constant)
-circuit_constant.draw('mpl')
-plt.title("DJ - Constant Oracle")
-plt.savefig("results/ex03_circuit_constant.png")
-plt.show()
+    circuit.draw("mpl")
+    plt.title(f"DJ - {label} Oracle")
+    plt.savefig(f"results/ex03_circuit_{label.lower()}.png")
+    plt.show()
 
-print("\n=== BALANCED ORACLE CIRCUIT ===")
-print(circuit_balanced)
-circuit_balanced.draw('mpl')
-plt.title("DJ - Balanced Oracle")
-plt.savefig("results/ex03_circuit_balanced.png")
-plt.show()
+oracles = {
+    "Constant": oracle_constant,
+    "Balanced": oracle_balanced,
+}
 
-counts_constant = run_and_interpret(circuit_constant, "Constant")
-counts_balanced = run_and_interpret(circuit_balanced, "Balanced")
+counts = {}
+
+for label, oracle in oracles.items():
+    circuit = deutsch_jozsa(oracle, label)
+
+    save_circuit_diagram(circuit, label)
+    counts[label] = run_and_interpret(circuit, label)
+
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-plot_histogram(counts_constant, ax=axes[0], title="Constant Oracle")
-plot_histogram(counts_balanced, ax=axes[1], title="Balanced Oracle")
+
+plot_histogram(counts["Constant"], ax=axes[0], title="Constant Oracle")
+plot_histogram(counts["Balanced"], ax=axes[1], title="Balanced Oracle")
+
 plt.suptitle("Exercise 03 - Deutsch-Jozsa Results", fontsize=14)
 plt.tight_layout()
 plt.savefig("results/ex03_histogram.png")
