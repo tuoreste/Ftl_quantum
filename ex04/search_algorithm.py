@@ -1,6 +1,8 @@
 
 
-# ─── Imports ──────────────────────────────────────────────────────────────────
+
+
+
 import math
 import os
 
@@ -11,22 +13,19 @@ import matplotlib.pyplot as plt
 
 os.makedirs("results", exist_ok=True)
 
+"""
+Marks the target state by flipping its phase from +1 to -1.
 
-# ─── Oracle ───────────────────────────────────────────────────────────────────
+Method:
+    1. X gates on qubits where target bit = '0'
+        (converts target pattern → all-ones pattern |11...1⟩)
+    2. Multi-controlled Z (only fires on |11...1⟩)
+    3. X gates again to uncompute step 1
 
+This way ONLY the target state gets its phase flipped.
+All other states are completely unaffected.
+"""
 def make_oracle(n_qubits, target_state):
-    """
-    Marks the target state by flipping its phase from +1 to -1.
-
-    Method:
-      1. X gates on qubits where target bit = '0'
-         (converts target pattern → all-ones pattern |11...1⟩)
-      2. Multi-controlled Z (only fires on |11...1⟩)
-      3. X gates again to uncompute step 1
-
-    This way ONLY the target state gets its phase flipped.
-    All other states are completely unaffected.
-    """
     qc = QuantumCircuit(n_qubits)
 
     # Step 1: map target → |11...1⟩
@@ -51,21 +50,20 @@ def make_oracle(n_qubits, target_state):
     return gate
 
 
-# ─── Diffuser ─────────────────────────────────────────────────────────────────
 
+"""
+Grover diffusion operator.
+Reflects all amplitudes around their current average.
+
+Effect:
+    - Amplitudes above average get pushed higher
+    - Amplitudes below average (the marked state, which is negative)
+    get pushed far above average
+
+Implementation (standard):
+    H on all → X on all → multi-controlled Z → X on all → H on all
+"""
 def make_diffuser(n_qubits):
-    """
-    Grover diffusion operator.
-    Reflects all amplitudes around their current average.
-
-    Effect:
-      - Amplitudes above average get pushed higher
-      - Amplitudes below average (the marked state, which is negative)
-        get pushed far above average
-
-    Implementation (standard):
-      H on all → X on all → multi-controlled Z → X on all → H on all
-    """
     qc = QuantumCircuit(n_qubits)
 
     # Transform to computational basis where |00...0⟩ is the "mirror"

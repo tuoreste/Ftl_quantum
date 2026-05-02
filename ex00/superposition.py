@@ -63,7 +63,6 @@ plt.title("Superposition Circuit")
 plt.savefig("results/superposition_circuit.png")
 plt.show()
 
-#______________________aer local simulator______________________
 simulator = AerSimulator()
 compiled_circuit = transpile(circuit, simulator)
 

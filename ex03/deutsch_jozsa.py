@@ -87,45 +87,49 @@ After the final H gates, the input qubits cannot all be |0⟩ → non-zero resul
 |111⟩ → three 1s → odd  → phase -1
 """
 def oracle_balanced(circuit, input_qubits, ancilla_qubit):
+    # circuit.cx(input_qubits[2], ancilla_qubit[0])
+    # ====
     circuit.cx(input_qubits[0], ancilla_qubit[0])
     circuit.cx(input_qubits[1], ancilla_qubit[0])
     circuit.cx(input_qubits[2], ancilla_qubit[0])
-
+    # ====
+    # circuit.x([0, 2])
+    # circuit.mcx(input_qubits, ancilla_qubit)
+    # circuit.x([0, 2])
+    # circuit.x(0)
+    # circuit.mcx(input_qubits, ancilla_qubit)
+    # circuit.x([0, 1])
+    # circuit.mcx(input_qubits, ancilla_qubit)
+    # circuit.x([1, 2])
+    # circuit.mcx(input_qubits, ancilla_qubit)
+    # circuit.x(2)
 
 """
 Builds and returns the full Deutsch-Jozsa circuit for a given oracle.
 Works for any oracle that follows the (circuit, input_qubits, ancilla) signature.
 """
 def deutsch_jozsa(oracle_fn, oracle_name="unknown"):
-    input_qubits  = QuantumRegister(3, name='input')
-    ancilla_qubit = QuantumRegister(1, name='ancilla')
-    cr            = ClassicalRegister(3, name='result')
-    circuit       = QuantumCircuit(input_qubits, ancilla_qubit, cr)
+    #qr_i = quantum register input
+    #qr_a = quantum register ancila
+    #cr = classical register->storage
+    #qc = quantum circuit
+    qr_i = QuantumRegister(3, name='input')
+    qr_a = QuantumRegister(1, name='ancilla')
+    cr = ClassicalRegister(3, name='result')
+    qc = QuantumCircuit(qr_i, qr_a, cr)
 
-    circuit.x(ancilla_qubit[0])
-    circuit.h(ancilla_qubit[0]) #phase kickback here
+    qc.x(qr_a)
+    qc.h(qr_a) #phase kickback here
+    qc.h(qr_i) #all the inputs superpositioned here
 
-    circuit.h(input_qubits[0])
-    circuit.h(input_qubits[1])
-    circuit.h(input_qubits[2]) #all the inputs superpositioned here
+    qc.barrier()
+    oracle_fn(qc, qr_i, qr_a) #marks the phases here(+1, -1)
 
-    circuit.barrier()
+    qc.barrier()
+    qc.h(qr_i) #interference reveal |000> if constant and sth else if balanced(they cancel out)
+    qc.measure(qr_i, cr) #only input qubits are measured. ancila was only for phasekickback
 
-    oracle_fn(circuit, input_qubits, ancilla_qubit) #marks the phases here(+1, -1)
-
-    circuit.barrier()
-
-    circuit.h(input_qubits[0])
-    circuit.h(input_qubits[1])
-    circuit.h(input_qubits[2]) #interference reveal |000> if constant and sth else if balanced(they cancel out)
-
-    circuit.barrier()
-
-    circuit.measure(input_qubits[0], cr[0])
-    circuit.measure(input_qubits[1], cr[1])
-    circuit.measure(input_qubits[2], cr[2]) #only input qubits are measured. ancila was only for phasekickback
-
-    return circuit
+    return qc
 
 
 def run_and_interpret(circuit, label):
@@ -137,12 +141,16 @@ def run_and_interpret(circuit, label):
     print(f"Oracle: {label}")
     print(f"Raw counts: {counts}")
 
+    measured = max(counts, key=counts.get)
 
-    is_constant = all(bit == '0' for result_str in counts for bit in result_str)
-    if is_constant:
-        print(f"Verdict: CONSTANT (all measurements are 000)")
+    if measured == "000":
+        answer = 0
+        print("Verdict: CONSTANT")
     else:
-        print(f"Verdict: BALANCED (non-zero measurement detected)")
+        answer = 1
+        print("Verdict: BALANCED")
+
+    print(f"Assignment output bit: {answer}")
     return counts
 
 circuit_constant = deutsch_jozsa(oracle_constant, "Constant")

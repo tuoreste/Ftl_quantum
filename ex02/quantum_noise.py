@@ -30,7 +30,6 @@ Numbers are exact. No physical pulses. No temperature. No neighboring qubits int
 
 """
 
-
 import os
 import sys
 
@@ -105,8 +104,6 @@ plt.suptitle("Ex02 - Simulator vs Real Quantum Computer", fontsize=14)
 plt.tight_layout()
 plt.savefig("results/ex02_comparison.png") 
 plt.show()
-
-# ─── 6. Noise analysis ──────────────────────────────────────────────────
 
 
 total_shots = sum(real_counts.values())

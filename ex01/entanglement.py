@@ -35,20 +35,23 @@ import matplotlib.pyplot as plt
 from qiskit_aer import AerSimulator
 from qiskit.visualization import plot_histogram
 
-qr = QuantumRegister(2, name='q')
-cr = ClassicalRegister(2, name='c')
+# qr = QuantumRegister(2, name='q')
+# cr = ClassicalRegister(2, name='c')
 
-circuit = QuantumCircuit(qr, cr)
+circuit = QuantumCircuit(2)
 #print(circuit)
 
-circuit.h(qr[0])
+# circuit.h(qr[0])
+circuit.h(0)
 #print(circuit)
 
-circuit.cx(qr[0], qr[1])
+# circuit.cx(qr[0], qr[1])
+circuit.cx(0, 1)
 print(circuit)
 
-circuit.measure(qr[0], cr[0])
-circuit.measure(qr[1], cr[1])
+# circuit.measure(qr[0], cr[0])
+# circuit.measure(qr[1], cr[1])
+circuit.measure_all()
 
 circuit.draw('mpl')
 plt.title("Entanglement Circuit")
