@@ -86,6 +86,7 @@ After the final H gates, the input qubits cannot all be |0⟩ → non-zero resul
 |110⟩ → two 1s   → even → phase +1
 |111⟩ → three 1s → odd  → phase -1
 """
+
 def oracle_balanced(circuit, input_qubits, ancilla_qubit):
     circuit.cx(input_qubits[0], ancilla_qubit[0])
     circuit.cx(input_qubits[1], ancilla_qubit[0])
@@ -96,44 +97,47 @@ Builds and returns the full Deutsch-Jozsa circuit for a given oracle.
 Works for any oracle that follows the (circuit, input_qubits, ancilla) signature.
 """
 def deutsch_jozsa(oracle_fn, oracle_name="unknown"):
-    #qr_i = quantum register input
-    #qr_a = quantum register ancila
-    #cr = classical register->storage
-    #qc = quantum circuit
-    qr_i = QuantumRegister(3, name='input')
-    qr_a = QuantumRegister(1, name='ancilla')
-    cr = ClassicalRegister(3, name='result')
+    qr_i = QuantumRegister(3, name="input")
+    qr_a = QuantumRegister(1, name="ancilla")
+    cr   = ClassicalRegister(3, name="result")
+
     qc = QuantumCircuit(qr_i, qr_a, cr)
 
     qc.x(qr_a)
-    qc.h(qr_a) #phase kickback here
-    qc.h(qr_i) #all the inputs superpositioned here
+    qc.h(qr_a)
+
+    qc.h(qr_i)
 
     qc.barrier()
-    oracle_fn(qc, qr_i, qr_a) #marks the phases here(+1, -1)
+    oracle_fn(qc, qr_i, qr_a)
 
     qc.barrier()
-    qc.h(qr_i) #interference reveal |000> if constant and sth else if balanced(they cancel out)
-    qc.measure(qr_i, cr) #only input qubits are measured. ancila was only for phasekickback
+    qc.h(qr_i)
+
+    qc.barrier()
+    qc.measure(qr_i, cr)
 
     return qc
 
-
 def run_and_interpret(circuit, label):
     simulator = AerSimulator()
-    counts    = simulator.run(transpile(circuit, simulator), shots=500).result().get_counts()
+    counts = simulator.run(transpile(circuit, simulator), shots=500).result().get_counts()
 
     measured = max(counts, key=counts.get)
-    answer = 0 if measured == "000" else 1
-    verdict = "CONSTANT" if answer == 0 else "BALANCED"
+
+    answer = "0" if measured == "000" else "1"
+    verdict = "CONSTANT" if answer == "0" else "BALANCED"
+
+    assignment_counts = {answer: counts[measured]}
 
     print(f"\n{'='*40}")
     print(f"Oracle: {label}")
     print(f"Raw counts: {counts}")
+    print(f"Measured input qubits: {measured}")
     print(f"Verdict: {verdict}")
     print(f"Assignment output bit: {answer}")
 
-    return counts
+    return assignment_counts
 
 def save_circuit_diagram(circuit, label):
     print(f"\n=== {label.upper()} ORACLE CIRCUIT ===")
@@ -156,7 +160,6 @@ for label, oracle in oracles.items():
 
     save_circuit_diagram(circuit, label)
     counts[label] = run_and_interpret(circuit, label)
-
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
