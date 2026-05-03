@@ -1,6 +1,7 @@
 # Makefile for FTL Quantum Project
+# python3 -c 'from qiskit_ibm_runtime import QiskitRuntimeService; QiskitRuntimeService.save_account(channel="ibm_quantum_platform", token="the_token", overwrite=True)
 
-.PHONY: setup ex00 ex01 ex02 ex03 ex04 clean
+.PHONY: setup ex00 ex01 ex02 ex03 ex04 bonus clean
 
 VENV = .venv
 PYTHON = $(VENV)/bin/python
@@ -32,6 +33,10 @@ ex03:
 ex04:
 	mkdir -p results
 	$(PYTHON) ex04/search_algorithm.py
+
+bonus:
+	mkdir -p results
+	$(PYTHON) bonus/bernstein_vazirani.py
 
 clean:
 	rm -rf results/*
