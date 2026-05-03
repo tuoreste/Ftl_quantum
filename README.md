@@ -9,11 +9,11 @@ all the way to a quantum search algorithm.
 ---
 
 ## Requirements
+Note: For less headache with installations, one may refer to the Makefile in root folder
 
 ```bash
 pip install qiskit qiskit-aer qiskit-ibm-runtime matplotlib pylatexenc
 ```
-Note: For less headache with installations, one may refer to the Makefile in root folder
 ---
 
 ## Exercises
