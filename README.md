@@ -13,6 +13,11 @@ Note: For less headache with installations, one may refer to the Makefile in roo
 
 ```bash
 pip install qiskit qiskit-aer qiskit-ibm-runtime matplotlib pylatexenc
+or
+
+make setup
+then
+Source .venv/bin/activate
 ```
 ---
 
@@ -32,6 +37,8 @@ Measurement collapses it to either 0 or 1 randomly.
 
 ```bash
 python ex00_superposition.py
+or
+make ex00
 ```
 
 ---
@@ -51,6 +58,8 @@ CNOT entangles the two qubits. The result is a Bell state.
 
 ```bash
 python ex01_entanglement.py
+or
+make ex01
 ```
 
 ---
@@ -77,9 +86,11 @@ The simulator confirms this — it produces zero 01 and 10 results.
 
 ```bash
 python ex02_noise_real_backend.py
+or
+make ex02
 ```
 
-**Note:** Requires an IBM Quantum account. Save your token once:
+**Note:** Requires an IBM Quantum account. Save your token once(better within the python environment):
 ```bash
 python -c "
 from qiskit_ibm_runtime import QiskitRuntimeService
@@ -120,6 +131,8 @@ via interference. One query gives a certain answer.
 
 ```bash
 python ex03_deutsch_jozsa.py
+or
+make ex03
 ```
 
 ---
@@ -153,6 +166,8 @@ formula: floor(π/4 × √N)
 
 ```bash
 python ex04_grover_search.py
+or
+make ex04
 ```
 
 ---
@@ -182,6 +197,8 @@ Measurement reads the secret directly.
 
 ```bash
 python ex_bonus_bernstein_vazirani.py
+or
+make bonus
 ```
 
 ---
