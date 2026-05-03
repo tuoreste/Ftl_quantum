@@ -1,94 +1,94 @@
 """
 
-The Big Picture
-Goal: find a marked item among N = 2^n items
-Classical: check items one by one → O(N) steps
-Quantum:   amplify the right answer → O(√N) steps
+Setup
+n = 2 qubits
+N = 2² = 4 states: |00⟩, |01⟩, |10⟩, |11⟩
+target = |11⟩
+optimal iterations = floor(π/4 × √4) = floor(π/4 × 2) = floor(1.57) = 1
 
-Three parts: Initialization → Oracle → Diffuser
-Repeat Oracle + Diffuser √N times then measure
+Stage 1: Initialization
+Start with both qubits in |0⟩:
+|ψ₀⟩ = |00⟩
+Apply H to qubit 0:
+H|0⟩ = (1/√2)(|0⟩ + |1⟩)
 
-Part 1: Initialization
-Start: all qubits in |0⟩
-Apply H to every qubit
-Result: equal superposition of all N states
-Every state has the same amplitude: 1/√N
-Nobody is special yet — the target looks identical to everyone else
+|ψ⟩ = (1/√2)(|0⟩ + |1⟩) ⊗ |0⟩
+     = (1/√2)(|00⟩ + |10⟩)
+Apply H to qubit 1:
+H|0⟩ = (1/√2)(|0⟩ + |1⟩)
 
-Part 2: The Oracle
-The oracle knows which state is the target
-It does not move it or reveal it
-It simply flips the target's amplitude from positive to negative
-  → target gets phase -1
-  → everyone else stays +1
-The target is now "marked" but still invisible to measurement
-  (squaring a negative still gives positive probability)
+|ψ₁⟩ = (1/√2)(|0⟩ + |1⟩) ⊗ (1/√2)(|0⟩ + |1⟩)
+      = (1/2)(|00⟩ + |01⟩ + |10⟩ + |11⟩)
+All four states have equal amplitude:
+amplitude of each state = 1/2 = 0.5
+probability of each state = (1/2)² = 1/4 = 25%
 
-Part 3: The Diffuser
-The diffuser reflects all amplitudes around their average
-Before reflection:
-  → target amplitude is negative (below average)
-  → everyone else is positive (above average)
-After reflection:
-  → target gets pushed far above average (large positive amplitude)
-  → everyone else gets pushed slightly below average
-One oracle + one diffuser = one Grover iteration
-The target's amplitude grows a little each iteration
+|ψ₁⟩ = 0.5|00⟩ + 0.5|01⟩ + 0.5|10⟩ + 0.5|11⟩
+Verify normalization:
+(0.5)² + (0.5)² + (0.5)² + (0.5)² = 0.25 + 0.25 + 0.25 + 0.25 = 1 ✓
 
-How Many Iterations
-Too few iterations → target amplitude not yet large enough
-Too many iterations → overshoots, amplitude drops again
-Optimal number → floor(π/4 × √N)
+Stage 2: Oracle
+Target is |11⟩. Oracle flips its phase from +0.5 to -0.5:
+Before oracle:
+  |00⟩  amplitude = +0.5
+  |01⟩  amplitude = +0.5
+  |10⟩  amplitude = +0.5
+  |11⟩  amplitude = +0.5  ← target
 
-n=2 qubits → N=4  → 1 iteration
-n=3 qubits → N=8  → 2 iterations
-n=4 qubits → N=16 → 3 iterations
+After oracle:
+  |00⟩  amplitude = +0.5
+  |01⟩  amplitude = +0.5
+  |10⟩  amplitude = +0.5
+  |11⟩  amplitude = -0.5  ← flipped
+State after oracle:
+|ψ₂⟩ = 0.5|00⟩ + 0.5|01⟩ + 0.5|10⟩ - 0.5|11⟩
 
-The Diffuser Circuit Step by Step
-Step 1: H on all qubits     → change basis
-Step 2: X on all qubits     → flip so |00...0⟩ becomes the target
-Step 3: multi-controlled Z  → flip phase of |00...0⟩ only
-Step 4: X on all qubits     → unflip (undo step 2)
-Step 5: H on all qubits     → change basis back
+Check probabilities — still all equal:
+P(|00⟩) = (0.5)²  = 25%
+P(|01⟩) = (0.5)²  = 25%
+P(|10⟩) = (0.5)²  = 25%
+P(|11⟩) = (-0.5)² = 25%  ← negative but probability unchanged
+Target is marked but still invisible. We need the diffuser.
 
-Net effect: reflect all amplitudes around their mean
+Stage 3: Diffuser
+Step 3a: Calculate the average amplitude
+average = (0.5 + 0.5 + 0.5 + (-0.5)) / 4
+        = 1.0 / 4
+        = 0.25
+Step 3b: Apply reflection formula to each state
+new amplitude = 2 × average - old amplitude
+For |00⟩:
+new = 2 × 0.25 - 0.5 = 0.5 - 0.5 = 0.0
+For |01⟩:
+new = 2 × 0.25 - 0.5 = 0.5 - 0.5 = 0.0
+For |10⟩:
+new = 2 × 0.25 - 0.5 = 0.5 - 0.5 = 0.0
+For |11⟩ (target):
+new = 2 × 0.25 - (-0.5) = 0.5 + 0.5 = 1.0
+State after diffuser:
+|ψ₃⟩ = 0.0|00⟩ + 0.0|01⟩ + 0.0|10⟩ + 1.0|11⟩
+Step 3c: Calculate final probabilities
+P(|00⟩) = (0.0)² = 0%
+P(|01⟩) = (0.0)² = 0%
+P(|10⟩) = (0.0)² = 0%
+P(|11⟩) = (1.0)² = 100%  ← target found with certainty
+Verify normalization:
+0 + 0 + 0 + 1 = 1 ✓
 
-The Oracle Circuit Step by Step
-Step 1: X on qubits where target bit = 0
-        → maps target pattern to |11...1⟩
-Step 2: multi-controlled Z
-        → flips phase only when all qubits are 1
-        → only the target state satisfies this
-Step 3: X on same qubits again
-        → uncompute step 1, restore original state
+Stage 4: Measurement
+Measure both qubits → get |11⟩ with 100% probability
+For n=2 qubits with 1 iteration, Grover finds the target with perfect certainty. For larger N the probability is ~96% not 100%, but one iteration is exact for N=4.
 
-Net effect: target gets phase -1, everyone else unchanged
-
-Measurement
-After √N iterations:
-  target amplitude ≈ 1.0
-  all other amplitudes ≈ 0.0
-
-Measure all qubits
-→ target state appears with high probability (~95% for n=3)
-→ run 1000 shots to confirm the dominant result
-→ the most frequent result is your answer
-
-Why Faster Than Classical
-Classical search:
-  check item 1 → not it
-  check item 2 → not it
-  check item 3 → found it  ← could be anywhere, average N/2 checks
-
-Quantum search:
-  all items exist simultaneously in superposition
-  oracle marks the target via phase in one query
-  diffuser amplifies the target's amplitude
-  repeat √N times → measure → done
-
-For N=1,000,000:
-  Classical → 500,000 checks on average
-  Quantum   → ~785 iterations
+Full Summary in One Table
+Stage          | |00⟩  | |01⟩  | |10⟩  | |11⟩  | Note
+───────────────|--------|--------|--------|--------|──────────────
+Start          | 0.000  | 0.000  | 0.000  | 0.000  | all in |00⟩
+After H gates  | +0.500 | +0.500 | +0.500 | +0.500 | equal superposition
+After oracle   | +0.500 | +0.500 | +0.500 | -0.500 | target flipped
+average        |        |        |        | =0.250 |
+After diffuser | 0.000  | 0.000  | 0.000  | +1.000 | target amplified
+───────────────|--------|--------|--------|--------|──────────────
+Probability    |   0%   |   0%   |   0%   |  100%  | found
 
 """
 
@@ -102,18 +102,6 @@ import matplotlib.pyplot as plt
 
 os.makedirs("results", exist_ok=True)
 
-"""
-Marks the target state by flipping its phase from +1 to -1.
-
-Method:
-    1. X gates on qubits where target bit = '0'
-        (converts target pattern → all-ones pattern |11...1⟩)
-    2. Multi-controlled Z (only fires on |11...1⟩)
-    3. X gates again to uncompute step 1
-
-This way ONLY the target state gets its phase flipped.
-All other states are completely unaffected.
-"""
 def make_oracle(n, target):
     qc = QuantumCircuit(n)
 
@@ -122,7 +110,7 @@ def make_oracle(n, target):
             qc.x(i)
 
     qc.h(n - 1)
-    qc.mcx(range(n - 1), n - 1)
+    qc.mcx(list(range(n - 1)), n - 1)
     qc.h(n - 1)
 
     for i, bit in enumerate(reversed(target)):
@@ -136,16 +124,15 @@ def make_oracle(n, target):
 
 
 """
-Grover diffusion operator.
-Reflects all amplitudes around their current average.
+Reflect all amplitudes around their average
+→ pushes the target amplitude higher each iteration
 
-Effect:
-    - Amplitudes above average get pushed higher
-    - Amplitudes below average (the marked state, which is negative)
-    get pushed far above average
+new amplitude = 2 × average - old amplitude
 
-Implementation (standard):
-    H on all → X on all → multi-controlled Z → X on all → H on all
+formula on a qc
+Phase 1: Change basis     (H + X)
+Phase 2: Phase flip       (H + MCX + H)
+Phase 3: Change back      (X + H)
 """
 def make_diffuser(n):
     qc = QuantumCircuit(n)
@@ -154,7 +141,7 @@ def make_diffuser(n):
     qc.x(range(n))
 
     qc.h(n - 1)
-    qc.mcx(range(n - 1), n - 1)
+    qc.mcx(list(range(n - 1)), n - 1)
     qc.h(n - 1)
 
     qc.x(range(n))
@@ -172,15 +159,14 @@ Parameters:
     n_qubits     : int, number of qubits (>= 2)
     target_state : str, binary string of length n_qubits
                     e.g. '111' to search for state 7 in 3-qubit space
-
-Returns:
-    The complete QuantumCircuit ready to run.
 """
 def grover(n, target):
     iterations = max(1, math.floor(math.pi / 4 * math.sqrt(2**n)))
 
     cr = ClassicalRegister(n, "result")
-    qc = QuantumCircuit(n, cr)
+    # qc = QuantumCircuit(n, cr)
+    qc = QuantumCircuit(n)
+    qc.add_register(cr)
 
     qc.h(range(n))
     qc.barrier()
