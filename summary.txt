@@ -1,6 +1,6 @@
 ═══════════════════════════════════════════════════════════
                     FTL_QUANTUM SUMMARY
-         What happens to qubits in each exercise
+                       What happens?
 ═══════════════════════════════════════════════════════════
 
 
