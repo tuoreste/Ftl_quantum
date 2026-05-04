@@ -1,0 +1,297 @@
+═══════════════════════════════════════════════════════════
+                    FTL_QUANTUM SUMMARY
+         What happens to qubits in each exercise
+═══════════════════════════════════════════════════════════
+
+
+───────────────────────────────────────────────────────────
+EX00 — SUPERPOSITION
+───────────────────────────────────────────────────────────
+
+INPUT
+  q0 = |0⟩   (qubit starts at zero, certain, definite)
+
+PROCESS
+  q0 → [H] → (1/√2)(|0⟩ + |1⟩)
+       Hadamard gate splits the qubit into both states equally
+       qubit is now neither 0 nor 1
+       it is genuinely both at the same time
+
+MEASURE
+  q0 collapses → 0 or 1
+  each with 50% probability
+  run 500 times to see the statistics
+
+OUTPUT
+  histogram: two equal bars at 0 and 1
+  each bar ≈ 50%
+  slight variation is normal — it is probabilistic
+
+KEY POINT
+  before measurement → qubit has no definite value
+  after measurement  → qubit has one definite value
+  the act of measuring destroys the superposition
+
+
+───────────────────────────────────────────────────────────
+EX01 — ENTANGLEMENT
+───────────────────────────────────────────────────────────
+
+INPUT
+  q0 = |0⟩
+  q1 = |0⟩
+  combined: |00⟩
+
+PROCESS
+  q0 → [H] → (1/√2)(|0⟩ + |1⟩)
+       q0 is now in superposition
+       q1 is still |0⟩
+       state: (1/√2)(|00⟩ + |10⟩)
+
+  q0,q1 → [CNOT] → (1/√2)(|00⟩ + |11⟩)
+           control=q0, target=q1
+           when q0=|0⟩ → q1 unchanged → |00⟩
+           when q0=|1⟩ → q1 flipped   → |11⟩
+           qubits are now entangled — inseparable
+
+MEASURE
+  both qubits collapse together
+  if q0=0 → q1=0 instantly (100% certain)
+  if q0=1 → q1=1 instantly (100% certain)
+
+OUTPUT
+  histogram: two bars only
+  00 ≈ 50%
+  11 ≈ 50%
+  01 = 0%   never appears
+  10 = 0%   never appears
+
+KEY POINT
+  qubits have no individual states anymore
+  they share one joint state
+  measuring one forces the other instantly
+
+
+───────────────────────────────────────────────────────────
+EX02 — QUANTUM NOISE
+───────────────────────────────────────────────────────────
+
+INPUT
+  identical circuit to ex01
+  same gates, same qubits, same measurements
+
+PROCESS
+  same as ex01 — H then CNOT
+  but running on real physical hardware this time
+  four noise sources attack the qubits during execution:
+
+  gate errors    → microwave pulse slightly wrong angle
+  decoherence    → qubit forgets its state over time
+  readout errors → measurement hardware misreads result
+  crosstalk      → neighboring qubit disturbs this one
+
+MEASURE
+  same measurement as ex01
+  but noise has corrupted some results
+
+OUTPUT
+  histogram: four bars now visible
+  00 ≈ 46%   (should be 50%)
+  11 ≈ 48%   (should be 50%)
+  01 ≈  3%   (should be  0%) ← noise
+  10 ≈  2%   (should be  0%) ← noise
+
+KEY POINT
+  circuit is correct — simulator proves this
+  noise comes from physics not from wrong quantum mechanics
+  real hardware is imperfect — qubits are extremely fragile
+
+
+───────────────────────────────────────────────────────────
+EX03 — DEUTSCH-JOZSA
+───────────────────────────────────────────────────────────
+
+INPUT
+  3 input qubits:  q0=|0⟩  q1=|0⟩  q2=|0⟩
+  1 ancilla qubit: q3=|0⟩
+
+PROCESS
+
+  step 1 — prepare ancilla in |-⟩
+    q3 → [X] → |1⟩
+    q3 → [H] → (1/√2)(|0⟩ - |1⟩) = |-⟩
+    ancilla is ready for phase kickback
+
+  step 2 — superposition on all inputs
+    q0 → [H] → (1/√2)(|0⟩ + |1⟩)
+    q1 → [H] → (1/√2)(|0⟩ + |1⟩)
+    q2 → [H] → (1/√2)(|0⟩ + |1⟩)
+    all 8 possible inputs exist simultaneously
+
+  step 3 — oracle query (one query only)
+    constant oracle → does nothing to input phases
+                      all 8 inputs keep phase +1
+    balanced oracle → CNOTs flip ancilla for odd-parity inputs
+                      phase kickback gives +1 or -1 per input
+                      4 inputs get +1, 4 inputs get -1
+
+  step 4 — final H on all input qubits
+    constant → all phases equal → constructive interference at |000⟩
+               |000⟩ amplitude = 1.0
+    balanced → mixed phases → destructive interference at |000⟩
+               |000⟩ amplitude = 0.0
+
+MEASURE
+  input qubits only — ancilla ignored
+
+OUTPUT
+  constant oracle → 000 with 100% probability
+  balanced oracle → anything except 000 with 100% probability
+
+KEY POINT
+  classical needs 5 queries to be certain
+  quantum needs 1 query always
+  superposition evaluates all 8 inputs simultaneously
+  interference reveals the answer
+
+
+───────────────────────────────────────────────────────────
+EX04 — GROVER'S SEARCH
+───────────────────────────────────────────────────────────
+
+INPUT
+  n qubits all starting at |0⟩
+  example: n=3, target = |101⟩
+  N = 2³ = 8 possible states
+
+PROCESS
+
+  step 1 — initialization
+    H on all qubits
+    all 8 states in equal superposition
+    every amplitude = 1/√8 = 0.354
+    target invisible — looks same as everyone else
+
+  step 2 — oracle  (repeat √N times)
+    target = |101⟩
+    X on qubit1 (where target bit = 0) → maps |101⟩ to |111⟩
+    H + MCX + H → phase flip on |111⟩ only
+    X on qubit1 again → restores |111⟩ back to |101⟩
+    result: target amplitude flipped from +0.354 to -0.354
+            all other amplitudes unchanged at +0.354
+
+  step 3 — diffuser  (repeat √N times)
+    calculate average of all amplitudes
+    average = (7 × 0.354 + (-0.354)) / 8 = 0.265
+    reflect every amplitude around the average:
+    new = 2 × average - old
+
+    wrong states: 2×0.265 - 0.354 = 0.176  (shrink)
+    target:       2×0.265 - (-0.354) = 0.884 (jump up)
+
+  repeat oracle + diffuser for floor(π/4 × √8) = 2 iterations
+    after iteration 2:
+    target amplitude ≈ 0.971
+    wrong amplitudes ≈ 0.089
+
+MEASURE
+  all qubits measured
+
+OUTPUT
+  target state dominates histogram
+  |101⟩ appears ≈ 94% of shots
+  all other states appear rarely
+
+KEY POINT
+  classical search: O(N) — check one by one
+  quantum search:   O(√N) — amplify the answer
+  oracle marks target by pushing it underground
+  diffuser amplifies target by reflecting around average
+  wrong answers cancel, right answer survives
+
+
+───────────────────────────────────────────────────────────
+BONUS — BERNSTEIN-VAZIRANI
+───────────────────────────────────────────────────────────
+
+INPUT
+  n input qubits:  all |0⟩
+  1 ancilla qubit: |0⟩
+  secret string hidden in oracle: s = '101'
+
+PROCESS
+
+  step 1 — prepare ancilla in |-⟩
+    ancilla → [X] → |1⟩
+    ancilla → [H] → |-⟩
+    ready for phase kickback
+
+  step 2 — superposition on all inputs
+    H on every input qubit
+    all 2^n inputs exist simultaneously
+    oracle will evaluate all of them in one query
+
+  step 3 — oracle query
+    secret = '101'
+    CNOT from qubit0 to ancilla  (secret bit 0 = 1)
+    no CNOT on qubit1             (secret bit 1 = 0)
+    CNOT from qubit2 to ancilla  (secret bit 2 = 1)
+
+    phase kickback writes secret into qubit phases:
+    qubit0 → secret bit=1 → phase kickback → qubit becomes |-⟩
+    qubit1 → secret bit=0 → no kickback    → qubit stays  |+⟩
+    qubit2 → secret bit=1 → phase kickback → qubit becomes |-⟩
+
+  step 4 — final H on all input qubits
+    H|-⟩ = |1⟩   → qubit where secret bit = 1 measures 1
+    H|+⟩ = |0⟩   → qubit where secret bit = 0 measures 0
+
+MEASURE
+  input qubits only
+
+OUTPUT
+  measurement result = secret string directly
+  qubit0 = 1
+  qubit1 = 0
+  qubit2 = 1
+  result: '101' = the secret ✓
+  100% probability, certain, every time
+
+KEY POINT
+  classical needs n queries — one per bit of secret
+  quantum needs 1 query always — entire secret at once
+  CNOT wiring pattern encodes the secret
+  phase kickback writes it into qubit phases
+  final H reads it back as bit values
+  measurement reveals the complete secret instantly
+
+
+═══════════════════════════════════════════════════════════
+                    COMPARISON TABLE
+═══════════════════════════════════════════════════════════
+
+Exercise      Qubits   What changes          Output
+────────────────────────────────────────────────────────────
+ex00          1        H on one qubit        50/50 histogram
+ex01          2        H + CNOT              only 00 and 11
+ex02          2        real hardware         noisy 00 and 11
+ex03          4        H + oracle + H        000 or non-zero
+ex04          n        H + oracle + diffuser target dominates
+bonus         n+1      H + oracle + H        secret string
+────────────────────────────────────────────────────────────
+
+Mechanism     ex00  ex01  ex02  ex03  ex04  bonus
+────────────────────────────────────────────────────────────
+Superposition  ✓     ✓     ✓     ✓     ✓     ✓
+Entanglement   ✗     ✓     ✓     ✗     ✗     ✗
+Phase kickback ✗     ✗     ✗     ✓     ✓     ✓
+Interference   ✗     ✗     ✗     ✓     ✓     ✓
+Real hardware  ✗     ✗     ✓     ✗     ✗     ✗
+────────────────────────────────────────────────────────────
+
+Classical vs Quantum cost
+────────────────────────────────────────────────────────────
+ex03 DJ       2^(n-1)+1 queries  vs  1 query
+ex04 Grover   O(N)               vs  O(√N)
+bonus BV      O(n)               vs  O(1)
+────────────────────────────────────────────────────────────
