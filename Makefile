@@ -5,6 +5,7 @@
 
 VENV = .venv
 PYTHON = $(VENV)/bin/python
+
 PIP = $(VENV)/bin/pip
 
 setup:
@@ -13,6 +14,7 @@ setup:
 	$(PIP) install qiskit qiskit-aer matplotlib pylatexenc
 	$(PIP) install qiskit qiskit-aer qiskit-ibm-runtime matplotlib pylatexenc
 	mkdir -p results
+	@echo "\033[33mPlease copy and paste 'source .venv/bin/activate' on your terminal\033[0m"
 
 ex00:
 	mkdir -p results

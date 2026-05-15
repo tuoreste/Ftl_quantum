@@ -1,35 +1,3 @@
-"""
-
-sources of quantum noises, engineering imperfection
-
-1. Gate errors:
-    Every quantum gate on real hardware is implemented by firing a precisely timed microwave pulse at a superconducting qubit.
-    The pulse is supposed to rotate the qubit's state by an exact angle on the Bloch sphere. But pulses are never perfectly calibrated:
-        Intended rotation:  exactly 90°
-        Actual rotation:    90.3°
-    That tiny angle error means the output state is slightly wrong.
-    After several gates the errors accumulate.
-    Small wrong amplitudes appear on states that should have zero probability — like |01⟩ and |10⟩.
-
-2. Decoherence
-    - The hardware can not hold the state perfectly
-    - A qubit in superposition is extraordinarily fragile.
-    Any interaction with the environment — stray electromagnetic fields, heat, vibration — causes the qubit to lose its quantum state and collapse randomly.
-        ==> T1  →  relaxation time: how long before |1⟩ spontaneously decays to |0⟩ typically 50-200 microseconds
-        ==> T2  →  coherence time: how long superposition survives before becoming random typically 50-150 microseconds
-
-3. Readouts errors
-    - When you measure a qubit, the hardware has to distinguish between two very similar physical signals.
-
-4. Cross talks
-    - Gate on qubit0  →  accidentally nudges qubit1 slightly
-                   qubit1's state shifts by a tiny unwanted amount
-
-A simulator is just math matrix maultiplication
-Numbers are exact. No physical pulses. No temperature. No neighboring qubits interfering. No time passing. 
-
-"""
-
 import os
 import sys
 

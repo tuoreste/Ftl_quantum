@@ -1,27 +1,3 @@
-"""
-There is a secret bit string s hidden inside an oracle.
-The oracle computes f(x) = x · s (mod 2)
-which is the dot product of input x and secret s, result is 0 or 1.
-
-CLASSICAL: need n queries to find n-bit secret (one query per bit)
-QUANTUM:   need exactly 1 query always
-
-HOW IT WORKS:
-Same structure as Deutsch-Jozsa:
-  1. Ancilla in |-⟩ for phase kickback
-  2. H on all input qubits → superposition
-  3. Oracle → phase kickback encodes secret into phases
-  4. H on all input qubits → phases become amplitudes
-  5. Measure → result IS the secret string directly
-
-WHY IT WORKS:
-The oracle flips the phase of input x by (-1)^(x·s)
-After the final H gates, the only state with nonzero
-amplitude is exactly |s⟩ — the secret string itself.
-One measurement gives you the entire secret instantly.
-
-"""
-
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
 from qiskit_aer import AerSimulator
 from qiskit.visualization import plot_histogram
